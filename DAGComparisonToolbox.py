@@ -79,6 +79,14 @@ class DAGComparisonToolbox:
         # Button to generate DAGs
         btn_generate_dags = tk.Button(self.root, text="Generate DAGs", command=self.generate_dags)
         btn_generate_dags.pack()
+
+        # Button to reset left graph
+        btn_reset_left = tk.Button(self.root, text="Reset Left Canvas", command=self.reset_left_gt_canvas)
+        btn_reset_left.pack()
+
+        # Button to reset right graph
+        btn_reset_right = tk.Button(self.root, text="Reset Right Canvas", command=self.reset_right_pred_canvas)
+        btn_reset_right.pack()
         
         # Frame for left and right graphs
         self.frame_left = tk.Frame(self.root)
@@ -161,7 +169,10 @@ class DAGComparisonToolbox:
         self.edges_right = [] # to store node pairs
         self.adj_matrix_left = np.zeros((num_vars, num_vars))
         self.adj_matrix_right = np.zeros((num_vars, num_vars))
-        
+
+        # also clear the metrics display
+        self.canvas_scores.delete("all")
+
         # Adjust canvas size based on number of variables
         canvas_width = 50 + 160 * 2  # Circle diameter + padding
         canvas_height = 50 + (num_vars - 1) * 50 + 160  # Circle diameter + (num_vars - 1) * spacing + padding
@@ -183,6 +194,28 @@ class DAGComparisonToolbox:
             self.canvas_right.create_text(right_x + 15, y + 15, text=name, fill="black")
             self.nodes_right.append((right_x + 15, y + 15))
         
+    def reset_left_gt_canvas(self):
+        self.canvas_left.delete("all")
+        self.canvas_left.create_text(10, 10, anchor="nw", text="Ground Truth", fill="black")
+        self.nodes_left = []
+        self.temp_current_edge_left = []
+        self.edges_left = []
+        self.adj_matrix_left = None
+        # also clear the metrics display
+        self.canvas_scores.delete("all")
+
+    def reset_right_pred_canvas(self):
+        self.canvas_right.delete("all")
+        self.canvas_right.create_text(10, 10, anchor="nw", text="Predicted Graph", fill="black")
+        self.nodes_right = []
+        self.temp_current_edge_right = []
+        self.edges_right = []
+        self.adj_matrix_right = None
+        # also clear the metrics display
+        self.canvas_scores.delete("all")
+
+
+
     def select_node_left(self, event):
         x, y = event.x, event.y
         node = self.find_closest_node(x, y, self.nodes_left)
