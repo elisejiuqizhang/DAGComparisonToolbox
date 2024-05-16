@@ -16,6 +16,17 @@ def calculate_accuracy(adj_matrix_gt, adj_matrix_pred):
     accuracy = num_correct / adj_matrix_gt.size
     return accuracy
 
+def calculate_TP_FP_TN_FN(adj_matrix_gt, adj_matrix_pred):
+    # True Positive: 1 in GT and 1 in Pred
+    # False Positive: 0 in GT and 1 in Pred
+    # True Negative: 0 in GT and 0 in Pred
+    # False Negative: 1 in GT and 0 in Pred
+    TP = np.sum(np.logical_and(adj_matrix_gt == 1, adj_matrix_pred == 1))
+    FP = np.sum(np.logical_and(adj_matrix_gt == 0, adj_matrix_pred == 1))
+    TN = np.sum(np.logical_and(adj_matrix_gt == 0, adj_matrix_pred == 0))
+    FN = np.sum(np.logical_and(adj_matrix_gt == 1, adj_matrix_pred == 0))
+    return TP, FP, TN, FN
+
 def calculate_precision(adj_matrix_gt, adj_matrix_pred):
     num_true_positive = np.sum(np.logical_and(adj_matrix_gt == 1, adj_matrix_pred == 1))
     num_predicted_positive = np.sum(adj_matrix_pred)
@@ -100,9 +111,9 @@ class DAGComparisonToolbox:
         self.text_adj_matrix_right = self.canvas_right.create_text(200, 200, anchor="nw", fill="black")
 
         # Text element for displaying metric scores
-        self.canvas_scores = tk.Canvas(self.root, bg="white", width=200, height=100)
+        self.canvas_scores = tk.Canvas(self.root, bg="white", width=300, height=300)
         self.canvas_scores.pack()
-        self.text_metric_scores = self.canvas_scores.create_text(100, 50, text="", font=("Arial", 14), fill="black")
+        self.text_metric_scores = self.canvas_scores.create_text(50, 50, text="", font=("Arial", 14), fill="black")
 
 
 
@@ -121,8 +132,8 @@ class DAGComparisonToolbox:
             self.canvas_right.delete(self.text_adj_matrix_right)
 
             # Insert new text into the text elements
-            self.text_adj_matrix_left = self.canvas_left.create_text(200, 20, anchor="nw", text="Adjacency Matrix - Ground Truth:\n" + matrix_left_str, fill="black")
-            self.text_adj_matrix_right = self.canvas_right.create_text(200, 20, anchor="nw", text="Adjacency Matrix - Predicted:\n" + matrix_right_str, fill="black")
+            self.text_adj_matrix_left = self.canvas_left.create_text(200, 20, anchor="nw", text="Adjacency Matrix \n Ground Truth:\n" + matrix_left_str, fill="black", font=("Arial", 16) )
+            self.text_adj_matrix_right = self.canvas_right.create_text(200, 20, anchor="nw", text="Adjacency Matrix \n Predicted:\n" + matrix_right_str, fill="black", font=("Arial", 16) )
 
             # also display in terminal
             print("Adjacency Matrix - Ground Truth:")
@@ -152,8 +163,8 @@ class DAGComparisonToolbox:
         self.adj_matrix_right = np.zeros((num_vars, num_vars))
         
         # Adjust canvas size based on number of variables
-        canvas_width = 50 + 30 * 2  # Circle diameter + padding
-        canvas_height = 50 + (num_vars - 1) * 50 + 30  # Circle diameter + (num_vars - 1) * spacing + padding
+        canvas_width = 50 + 160 * 2  # Circle diameter + padding
+        canvas_height = 50 + (num_vars - 1) * 50 + 160  # Circle diameter + (num_vars - 1) * spacing + padding
         self.canvas_left.config(width=canvas_width, height=canvas_height)
         self.canvas_right.config(width=canvas_width, height=canvas_height)
         
@@ -235,15 +246,17 @@ class DAGComparisonToolbox:
     def calculate_metrics(self):
         # Calculate the five metrics
         self.accuracy = calculate_accuracy(self.adj_matrix_left, self.adj_matrix_right)
+        self.TP, self.FP, self.TN, self.FN = calculate_TP_FP_TN_FN(self.adj_matrix_left, self.adj_matrix_right)
         self.precision = calculate_precision(self.adj_matrix_left, self.adj_matrix_right)
         self.recall = calculate_recall(self.adj_matrix_left, self.adj_matrix_right)
         self.f1_score = calculate_f1_score(self.adj_matrix_left, self.adj_matrix_right)
         self.shd = calculate_structural_hamming_distance(self.adj_matrix_left, self.adj_matrix_right)
 
         # display in canvas
-        scores_text = f"Accuracy: {self.accuracy:.4f}\nPrecision: {self.precision:.4f}\nRecall: {self.recall:.4f}\nF1 Score: {self.f1_score:.4f}\nSHD: {self.shd:.4f}"
-        # Update the text element on the canvas with the metric scores
-        self.canvas_scores.itemconfig(self.text_metric_scores, text=scores_text)
+        scores_text_1 = f"Accuracy: {self.accuracy:.4f}\nPrecision: {self.precision:.4f}\nRecall: {self.recall:.4f}\nF1 Score: {self.f1_score:.4f}\nSHD: {self.shd:.4f}\n\n"
+        scores_text_2 = f"TP: {self.TP}\nFP: {self.FP}\nTN: {self.TN}\nFN: {self.FN}\n\n"
+        self.canvas_scores.delete(self.text_metric_scores)
+        self.canvas_scores.create_text(150, 150, text=scores_text_1+scores_text_2, font=("Arial", 16), fill="black")
 
 
         # also print in terminal
@@ -252,7 +265,12 @@ class DAGComparisonToolbox:
         print("Recall:", self.recall)
         print("F1 Score:", self.f1_score)
         print("SHD:", self.shd)
-        return self.accuracy, self.precision, self.recall, self.f1_score, self.shd
+        print("\n")
+        print("TP:", self.TP)
+        print("FP:", self.FP)
+        print("TN:", self.TN)
+        print("FN:", self.FN)
+        return self.accuracy, self.precision, self.recall, self.f1_score, self.shd, self.TP, self.FP, self.TN, self.FN
         
     def run(self):
         self.root.mainloop()
