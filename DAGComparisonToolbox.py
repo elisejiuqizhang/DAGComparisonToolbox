@@ -195,25 +195,58 @@ class DAGComparisonToolbox:
             self.nodes_right.append((right_x + 15, y + 15))
         
     def reset_left_gt_canvas(self):
+        num_vars = self.num_variables.get()
         self.canvas_left.delete("all")
         self.canvas_left.create_text(10, 10, anchor="nw", text="Ground Truth", fill="black")
         self.nodes_left = []
         self.temp_current_edge_left = []
         self.edges_left = []
-        self.adj_matrix_left = None
+        self.adj_matrix_left = np.zeros((num_vars, num_vars))
         # also clear the metrics display
         self.canvas_scores.delete("all")
 
+        # Adjust canvas size based on number of variables
+        canvas_width = 50 + 160 * 2  # Circle diameter + padding
+        canvas_height = 50 + (num_vars - 1) * 50 + 160  # Circle diameter + (num_vars - 1) * spacing + padding
+        self.canvas_left.config(width=canvas_width, height=canvas_height)
+
+        # Draw circles for variables on left and right with names inside
+        left_x = 50
+        y_spacing = 50
+        for i in range(num_vars):
+            y = 50 + i * y_spacing
+            name = f"Y{i}"
+            self.canvas_left.create_oval(left_x, y, left_x + 30, y + 30, outline="black", width=2, tags=f"node_left_{i}")
+            self.canvas_left.create_text(left_x + 15, y + 15, text=name, fill="black")
+            self.nodes_left.append((left_x + 15, y + 15))
+
+
     def reset_right_pred_canvas(self):
+        num_vars = self.num_variables.get()
         self.canvas_right.delete("all")
         self.canvas_right.create_text(10, 10, anchor="nw", text="Predicted Graph", fill="black")
+
         self.nodes_right = []
         self.temp_current_edge_right = []
         self.edges_right = []
-        self.adj_matrix_right = None
+        self.adj_matrix_right = np.zeros((num_vars, num_vars))
         # also clear the metrics display
         self.canvas_scores.delete("all")
 
+        # Adjust canvas size based on number of variables
+        canvas_width = 50 + 160 * 2  # Circle diameter + padding
+        canvas_height = 50 + (num_vars - 1) * 50 + 160  # Circle diameter + (num_vars - 1) * spacing + padding
+        self.canvas_right.config(width=canvas_width, height=canvas_height)
+        
+        # Draw circles for variables on left and right with names inside
+        right_x = 50
+        y_spacing = 50
+        for i in range(num_vars):
+            y = 50 + i * y_spacing
+            name = f"Y{i}"
+            self.canvas_right.create_oval(right_x, y, right_x + 30, y + 30, outline="black", width=2, tags=f"node_right_{i}")
+            self.canvas_right.create_text(right_x + 15, y + 15, text=name, fill="black")
+            self.nodes_right.append((right_x + 15, y + 15))
 
 
     def select_node_left(self, event):
