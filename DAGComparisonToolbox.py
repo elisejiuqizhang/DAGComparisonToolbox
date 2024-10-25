@@ -1,11 +1,10 @@
 # Author: Elise Zhang
-# Date: 15 mai 2024
+# Date: 15 mai 2024 (updated October 25 2024)
 
 # Environment 'DAGCompare' created with conda
 # conda create -n DAGCompare python=3.9
 # conda activate DAGCompare
 # pip install numpy
-
 
 import tkinter as tk
 import numpy as np
@@ -25,6 +24,16 @@ def calculate_TP_FP_TN_FN(adj_matrix_gt, adj_matrix_pred):
     FP = np.sum(np.logical_and(adj_matrix_gt == 0, adj_matrix_pred == 1))
     TN = np.sum(np.logical_and(adj_matrix_gt == 0, adj_matrix_pred == 0))
     FN = np.sum(np.logical_and(adj_matrix_gt == 1, adj_matrix_pred == 0))
+    
+    # Consider bidirectional edges (i, j) and (j, i)
+    TP_bidirectional = np.sum(np.logical_and(adj_matrix_gt.T == 1, adj_matrix_pred.T == 1))
+    FP_bidirectional = np.sum(np.logical_and(adj_matrix_gt.T == 0, adj_matrix_pred.T == 1))
+    FN_bidirectional = np.sum(np.logical_and(adj_matrix_gt.T == 1, adj_matrix_pred.T == 0))
+    
+    TP += TP_bidirectional
+    FP += FP_bidirectional
+    FN += FN_bidirectional
+
     return TP, FP, TN, FN
 
 def calculate_precision(adj_matrix_gt, adj_matrix_pred):
@@ -53,7 +62,7 @@ def calculate_structural_hamming_distance(adj_matrix_gt, adj_matrix_pred):
 class DAGComparisonToolbox:
     def __init__(self, root):
         self.root = root
-        self.root.title("DAG Comparison Toolbox")
+        self.root.title("Graph Comparison Toolbox")
         
         # Variables
         self.num_variables = tk.IntVar(value=4)  # Default to 4 variables
@@ -76,9 +85,9 @@ class DAGComparisonToolbox:
         entry_num_variables = tk.Entry(self.root, textvariable=self.num_variables)
         entry_num_variables.pack()
         
-        # Button to generate DAGs
-        btn_generate_dags = tk.Button(self.root, text="Generate DAGs", command=self.generate_dags)
-        btn_generate_dags.pack()
+        # Button to generate graphs
+        btn_generate_graphs = tk.Button(self.root, text="Generate Graphs", command=self.generate_graphs)
+        btn_generate_graphs.pack()
 
         # Button to reset left graph
         btn_reset_left = tk.Button(self.root, text="Reset Left Canvas", command=self.reset_left_gt_canvas)
@@ -123,13 +132,7 @@ class DAGComparisonToolbox:
         self.canvas_scores.pack()
         self.text_metric_scores = self.canvas_scores.create_text(50, 50, text="", font=("Arial", 14), fill="black")
 
-
-
     def display_adjacency_matrix(self):
-        # if self.adj_matrix_left is not None and self.adj_matrix_right is not None:
-        #     # Update text elements with matrices
-        #     self.canvas_left.itemconfig(self.text_adj_matrix_left, text="Adjacency Matrix - Ground Truth:\n" + str(self.adj_matrix_left))
-        #     self.canvas_right.itemconfig(self.text_adj_matrix_right, text="Adjacency Matrix - Predicted:\n" + str(self.adj_matrix_right))
         if self.adj_matrix_left is not None and self.adj_matrix_right is not None:
             # Convert adjacency matrices to strings for display
             matrix_left_str = "\n".join([" ".join(map(str, row)) for row in self.adj_matrix_left])
@@ -140,20 +143,18 @@ class DAGComparisonToolbox:
             self.canvas_right.delete(self.text_adj_matrix_right)
 
             # Insert new text into the text elements
-            self.text_adj_matrix_left = self.canvas_left.create_text(200, 20, anchor="nw", text="Adjacency Matrix \n Ground Truth:\n" + matrix_left_str, fill="black", font=("Arial", 16) )
-            self.text_adj_matrix_right = self.canvas_right.create_text(200, 20, anchor="nw", text="Adjacency Matrix \n Predicted:\n" + matrix_right_str, fill="black", font=("Arial", 16) )
+            self.text_adj_matrix_left = self.canvas_left.create_text(200, 20, anchor="nw", text="Adjacency Matrix \n Ground Truth:\n" + matrix_left_str, fill="black", font=("Arial", 16))
+            self.text_adj_matrix_right = self.canvas_right.create_text(200, 20, anchor="nw", text="Adjacency Matrix \n Predicted:\n" + matrix_right_str, fill="black", font=("Arial", 16))
 
             # also display in terminal
             print("Adjacency Matrix - Ground Truth:")
-            print(str(self.adj_matrix_left)+"\n")
+            print(str(self.adj_matrix_left) + "\n")
             print("Adjacency Matrix - Predicted:")
-            print(str(self.adj_matrix_right)+"\n")
+            print(str(self.adj_matrix_right) + "\n")
         else:
             print("Adjacency matrices are not yet generated.")
-
-
         
-    def generate_dags(self):
+    def generate_graphs(self):
         num_vars = self.num_variables.get()
         
         # Clear previous graphs, nodes, edges, and adjacency matrices
@@ -163,10 +164,10 @@ class DAGComparisonToolbox:
         self.canvas_right.create_text(10, 10, anchor="nw", text="Predicted Graph", fill="black")
         self.nodes_left = []
         self.nodes_right = []
-        self.temp_current_edge_left = [] # to store node pairs, once we have two nodes, we can draw an edge, and clear the temp
-        self.temp_current_edge_right = [] # to store node pairs, once we have two nodes, we can draw an edge, and clear the temp
-        self.edges_left = [] # to store node pairs
-        self.edges_right = [] # to store node pairs
+        self.temp_current_edge_left = []  # to store node pairs, once we have two nodes, we can draw an edge, and clear the temp
+        self.temp_current_edge_right = []  # to store node pairs, once we have two nodes, we can draw an edge, and clear the temp
+        self.edges_left = []  # to store node pairs
+        self.edges_right = []  # to store node pairs
         self.adj_matrix_left = np.zeros((num_vars, num_vars))
         self.adj_matrix_right = np.zeros((num_vars, num_vars))
 
@@ -220,7 +221,6 @@ class DAGComparisonToolbox:
             self.canvas_left.create_text(left_x + 15, y + 15, text=name, fill="black")
             self.nodes_left.append((left_x + 15, y + 15))
 
-
     def reset_right_pred_canvas(self):
         num_vars = self.num_variables.get()
         self.canvas_right.delete("all")
@@ -248,7 +248,6 @@ class DAGComparisonToolbox:
             self.canvas_right.create_text(right_x + 15, y + 15, text=name, fill="black")
             self.nodes_right.append((right_x + 15, y + 15))
 
-
     def select_node_left(self, event):
         x, y = event.x, event.y
         node = self.find_closest_node(x, y, self.nodes_left)
@@ -273,7 +272,6 @@ class DAGComparisonToolbox:
                     self.update_adj_matrix(self.adj_matrix_right, self.temp_current_edge_right)
                     self.temp_current_edge_right = []
         
-
     def find_closest_node(self, x, y, nodes):
         min_dist = float("inf")
         closest_node = None
@@ -287,27 +285,30 @@ class DAGComparisonToolbox:
         else:
             return None
 
-    def draw_edge(self, canvas, current_edge):
-        # if the two nodes connected are adjacent in indices, draw a straight arrow from one to the other
-        # otherwise, draw a curved arrow
+    def draw_edge(self, canvas, current_edge, bidirectional=False):
         index1 = self.nodes_left.index(current_edge[0]) if current_edge[0] in self.nodes_left else self.nodes_right.index(current_edge[0])
         index2 = self.nodes_left.index(current_edge[1]) if current_edge[1] in self.nodes_left else self.nodes_right.index(current_edge[1])
-        if abs(index1 - index2) == 1:
-            x1, y1 = current_edge[0]
-            x2, y2 = current_edge[1]
-            canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, fill="red", width=2, tags="edge")
-        else:
-            x1, y1 = current_edge[0]
-            x2, y2 = current_edge[1]
-            control_x = (x1 + x2) // 2 + 30*abs(index1 - index2)
-            control_y = (y1 + y2) // 2 
-            canvas.create_line(x1, y1, control_x, control_y, x2, y2, arrow=tk.LAST, smooth=True, fill="red", width=2, tags="edge")
+        x1, y1 = current_edge[0]
+        x2, y2 = current_edge[1]
         
-    def update_adj_matrix(self, adj_matrix, nodes):
+        if abs(index1 - index2) == 1:
+            canvas.create_line(x1, y1, x2, y2, arrow=tk.LAST, fill="red", width=2, tags="edge")
+            if bidirectional:
+                canvas.create_line(x2, y2, x1, y1, arrow=tk.LAST, fill="blue", width=2, tags="edge")
+        else:
+            control_x = (x1 + x2) // 2 + 30 * abs(index1 - index2)
+            control_y = (y1 + y2) // 2
+            canvas.create_line(x1, y1, control_x, control_y, x2, y2, arrow=tk.LAST, smooth=True, fill="red", width=2, tags="edge")
+            if bidirectional:
+                canvas.create_line(x2, y2, control_x, control_y, x1, y1, arrow=tk.LAST, smooth=True, fill="blue", width=2, tags="edge")
+        
+    def update_adj_matrix(self, adj_matrix, nodes, bidirectional=False):
         if len(nodes) == 2:
             index1 = self.nodes_left.index(nodes[0]) if nodes[0] in self.nodes_left else self.nodes_right.index(nodes[0])
             index2 = self.nodes_left.index(nodes[1]) if nodes[1] in self.nodes_left else self.nodes_right.index(nodes[1])
             adj_matrix[index1][index2] = 1
+            if bidirectional:
+                adj_matrix[index2][index1] = 1
         
     def calculate_metrics(self):
         # Calculate the five metrics
@@ -322,8 +323,7 @@ class DAGComparisonToolbox:
         scores_text_1 = f"Accuracy: {self.accuracy:.4f}\nPrecision: {self.precision:.4f}\nRecall: {self.recall:.4f}\nF1 Score: {self.f1_score:.4f}\nSHD: {self.shd:.4f}\n\n"
         scores_text_2 = f"TP: {self.TP}\nFP: {self.FP}\nTN: {self.TN}\nFN: {self.FN}\n\n"
         self.canvas_scores.delete(self.text_metric_scores)
-        self.canvas_scores.create_text(150, 150, text=scores_text_1+scores_text_2, font=("Arial", 16), fill="black")
-
+        self.canvas_scores.create_text(150, 150, text=scores_text_1 + scores_text_2, font=("Arial", 16), fill="black")
 
         # also print in terminal
         print("Accuracy:", self.accuracy)
